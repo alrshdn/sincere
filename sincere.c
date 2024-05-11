@@ -1,14 +1,18 @@
 #include "sincere.h"
 
 
+static void _sincere_handle_initialize(SincereHandle *handle, SincereHandleType type);
+
+
+/* Initialize a handle for a specific type of memory objects. */
 void
-sincere_handle_initialize(SincereHandle *handle, SincereHandleType type)
+_sincere_handle_initialize(SincereHandle *handle, SincereHandleType type)
 {
 	handle->type = type;
 	handle->data = NULL;
 }
 
-
+/* Initialize a POSIX shared memory object and return a handle for it. */
 SincereHandle *
 sincere_shared_memory_initialize(const char *name, off_t size, bool readonly, bool create, bool unlink)
 {
@@ -53,16 +57,15 @@ sincere_shared_memory_initialize(const char *name, off_t size, bool readonly, bo
 	/* truncating the shared memory object to the size/length sepcified */
 	if (!readonly && ftruncate(fd, size) == -1) {
 		/* TODO(alrshdn): Handle error. */
-		printf("[ERROR]: Failed to truncate shared memory object to the size/length specified (size = %d).\n", size);
+		printf("[ERROR]: Failed to truncate shared memory object to the size/length specified (size = %ld).\n", size);
 		exit(EXIT_FAILURE);
 	}
 
-	/* handle allocation and initialization */
+	/* allocating and initializing a handle */
 	handle = malloc(sizeof *handle);
-	sincere_handle_initialize(handle, S_HANDLE_TYPE_SHARED_MEMORY_POSIX);
+	_sincere_handle_initialize(handle, S_HANDLE_TYPE_POSIX_SHARED_MEMORY);
 
 	/* mapping shared memory object */
-	/* TODO(alrshdn): add support for `MAP_ANONYMOUS` if possible/relevant */
 	ptr = mmap(
 			NULL,				/* address hint */
 			size,				/* size/length of mapping  */
@@ -90,9 +93,11 @@ sincere_shared_memory_initialize(const char *name, off_t size, bool readonly, bo
 	return handle;
 }
 
+/* Initialize a POSIX shared memory object from a preset configuration and return a handle for it. */
 SincereHandle *
 sincere_shared_memory_initialize_from_config(SincereSharedMemoryConfig *config)
 {
+	/* wrapper around `sincere_shared_memory_initialize(...)` */
 	return sincere_shared_memory_initialize(
 			config->name,
 			config->size,
@@ -102,27 +107,14 @@ sincere_shared_memory_initialize_from_config(SincereSharedMemoryConfig *config)
 			);
 }
 
-void
-sincere_finalize(SincereHandle *handle)
-{
-	if (handle->type == S_HANDLE_TYPE_SHARED_MEMORY_POSIX) {
-		/* unmapping */
-		munmap(handle->data, handle->size);
-
-		/* unlinking if configured to do so */
-		if (handle->unlink) shm_unlink(handle->name);
-	}
-
-	/* freeing the handle */
-	free(handle);
-}
-
+/* Returns a direct pointer to the data in a POSIX shared memory object. */
 void *
 sincere_shared_memory_get(SincereHandle* handle)
 {
 	return handle->data;
 }
 
+/* Sets the whole data of a POSIX shared memory object to the input (must be of the same size). */
 void
 sincere_shared_memory_set(SincereHandle* handle, void *data)
 {
@@ -133,4 +125,20 @@ sincere_shared_memory_set(SincereHandle* handle, void *data)
 		printf("[ERROR]: Failed to set shared memory data! Reason: read-only memory.\n");
 		exit(EXIT_FAILURE);
 	}
+}
+
+/* Finalize (clean up and free) a memory object based on its type and configuration. */
+void
+sincere_finalize(SincereHandle *handle)
+{
+	if (handle->type == S_HANDLE_TYPE_POSIX_SHARED_MEMORY) {
+		/* unmapping */
+		munmap(handle->data, handle->size);
+
+		/* unlinking if configured to do so */
+		if (handle->unlink) shm_unlink(handle->name);
+	}
+
+	/* freeing the handle */
+	free(handle);
 }
