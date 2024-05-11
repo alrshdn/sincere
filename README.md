@@ -23,10 +23,10 @@ main(void)
 	/* initializing a POSIX shared memoey object with configuration */
 	SincereHandle *shm = sincere_shared_memory_initialize(
 		"/my-shared-memory",		/* name (must start with "/") */
-		sizeof(Data),				/* size of memory allocation */
-		false,						/* readonly mode */
-		true,						/* create if it does not exist */
-		false						/* unlink after finalizing */
+		sizeof(Data),			/* size of memory allocation */
+		false,				/* readonly mode */
+		true,				/* create if it does not exist */
+		false				/* unlink after finalizing */
 		);
 
 	Data data = {42};
@@ -51,10 +51,10 @@ main(void)
 	/* initializing a POSIX shared memoey object with configuration */
 	SincereHandle *shm = sincere_shared_memory_initialize(
 		"/my-shared-memory",		/* name (must start with "/") */
-		sizeof(Data),				/* size of memory allocation */
-		true,						/* readonly mode */
-		false,						/* create if it does not exist */
-		true						/* unlink after finalizing */
+		sizeof(Data),			/* size of memory allocation */
+		true,				/* readonly mode */
+		false,				/* create if it does not exist */
+		true				/* unlink after finalizing */
 		);
 
 	/* accessing the data in the shared memory object via a direct pointer */
